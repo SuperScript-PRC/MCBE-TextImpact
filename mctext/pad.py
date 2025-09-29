@@ -1,15 +1,13 @@
 from typing import Callable
 from .align import get_line_width
+from .utils import solve_xy
 
 from typing import List, Tuple, Optional
 
-
-# def get_line_width(text:str):
-#     return simu.compute_width(text)[0]
+__all__ = ["pad", "pad_with_format"]
 
 S = get_line_width(" ") + 4
 B = get_line_width("§l ") + 4
-print(S, B)
 
 
 def _check_same_parity(c: List[int]) -> bool:
@@ -20,22 +18,7 @@ def _check_same_parity(c: List[int]) -> bool:
     return all((ci & 1) == p for ci in c)
 
 
-def solve_xy(c: int) -> Optional[Tuple[int, int]]:
-    if c % 2 != 0:
-        return None  # 无解
 
-    m = c // 2
-    # 通解: x = -m + 7t, y = m - 6t
-    a, b = S // 2, B // 2
-    t_min = (m + a) // b  # ceil(m/7)
-    t_max = m // a  # floor(m/6)
-    if t_min <= t_max:
-        t = t_min
-        x = -m + b * t
-        y = m - a * t
-        return (x, y)
-    else:
-        return None
 
 
 def resolve(c: List[int]) -> Optional[List[Tuple[int, int]]]:
@@ -54,7 +37,7 @@ def resolve(c: List[int]) -> Optional[List[Tuple[int, int]]]:
         ok = True
         for ci in c:
             di = width - ci
-            ret = solve_xy(di)
+            ret = solve_xy(S, B, di)
 
             if ret is None:
                 ok = False

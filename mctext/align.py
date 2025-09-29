@@ -69,6 +69,16 @@ def get_specific_length_spaces_and_diff(length: int, *, prev_diff=0):
 
 
 def cut_by_length(line: str, _spaces: int) -> list[str]:
+    """
+    根据给定长度切分文本。
+
+    Args:
+        line (str): 文本
+        _spaces (int): 最大长度
+
+    Returns:
+        list[str]: 切分后的文本
+    """
     width = 0
     spaces = _spaces * SPACE_WIDTH + max(0, _spaces - 1) * CHAR_HORIZON_PADDING
     _bold = False

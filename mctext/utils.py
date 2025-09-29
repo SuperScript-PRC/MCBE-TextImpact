@@ -104,3 +104,19 @@ def find_closest(a: int, b: int, c: int):
 
     return solutions, final_diff
 
+def solve_xy(S: int, B: int, c: int) -> tuple[int, int] | None:
+    if c % 2 != 0:
+        return None  # 无解
+
+    m = c // 2
+    # 通解: x = -m + 7t, y = m - 6t
+    a, b = S // 2, B // 2
+    t_min = (m + a) // b  # ceil(m/7)
+    t_max = m // a  # floor(m/6)
+    if t_min <= t_max:
+        t = t_min
+        x = -m + b * t
+        y = m - a * t
+        return (x, y)
+    else:
+        return None
