@@ -1,0 +1,8 @@
+# workspace
+.vscode
+.idea
+.DS_store
+
+# debug
+
+test_*.py
