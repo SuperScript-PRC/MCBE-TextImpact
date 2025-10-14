@@ -1,5 +1,6 @@
 from typing import Callable
-from .align import get_line_width
+from .define import CHAR_HORIZON_PADDING
+from .align import get_line_width, get_char_width
 from .utils import solve_xy
 
 from typing import List, Tuple, Optional
@@ -16,9 +17,6 @@ def _check_same_parity(c: List[int]) -> bool:
         return True
     p = c[0] & 1
     return all((ci & 1) == p for ci in c)
-
-
-
 
 
 def resolve(c: List[int]) -> Optional[List[Tuple[int, int]]]:
@@ -108,3 +106,11 @@ def pad_with_format(
     text: str, pad_fn: Optional[Callable[[List[str]], List[str]]] = None
 ):
     return Padder(text, pad_fn or pad)()
+
+def pad_with_length(length: int, padder: str = "", _round=False):
+    _length = length + CHAR_HORIZON_PADDING
+    char_width = get_char_width(padder) + CHAR_HORIZON_PADDING
+    if not _round:
+        return padder * (_length // char_width)
+    else:
+        return padder * round(_length / char_width)
