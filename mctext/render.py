@@ -41,7 +41,7 @@ class SimulateOptions:
             "e": (255, 255, 85, 255),
             "f": (255, 255, 255, 255),
             "g": (221, 214, 5, 255),
-            "h": (222, 214, 5, 255),
+            "h": (227, 212, 209, 255),
             "i": (227, 212, 209, 255),
             "j": (68, 58, 59, 255),
             "m": (151, 22, 7, 255),
@@ -143,36 +143,37 @@ class TellRawSimulator:
             _total_width += ITALIC_CHAR_HORIZON_PADDING
         return _total_width + max(0, len(line) - 1) * self.opt.font_horizon_padding
 
-    def __call__(self, text:str) -> PILImage:
-        lines,fmts=self._split_format_and_text(text)
-        max_width=max([
-            self._get_line_width(line,fmt)
-            for line,fmt in zip(lines,fmts)
-        ])
-        height=len(lines)*31+max(len(lines)-1,0)*self.opt.line_padding
-        mat = np.zeros((height,max_width,4),dtype=np.uint8)
-        for line_i,(line,fmt) in enumerate(zip(lines,fmts)):
-            start_y=line_i*(31+self.opt.line_padding)
-            start_x=0
-            italic_start_x=-1
-            for i,(c,f) in enumerate(zip(line,fmt)):
-                pos=(start_x,start_y)
-                patch=self.font(c,f&0xFF80)
-                self._draw(mat,patch,pos,self._get_color(f))
-                if f&FMT_Italic and italic_start_x==-1:
-                    italic_start_x=start_x
-                    
-                start_x+=patch.width+self.opt.font_horizon_padding
-                if italic_start_x==-1:
+    def __call__(self, text: str) -> PILImage:
+        lines, fmts = self._split_format_and_text(text)
+        max_width = max(
+            [self._get_line_width(line, fmt) for line, fmt in zip(lines, fmts)]
+        )
+        height = len(lines) * 31 + max(len(lines) - 1, 0) * self.opt.line_padding
+        mat = np.zeros((height, max_width, 4), dtype=np.uint8)
+        for line_i, (line, fmt) in enumerate(zip(lines, fmts)):
+            start_y = line_i * (31 + self.opt.line_padding)
+            start_x = 0
+            italic_start_x = -1
+            for i, (c, f) in enumerate(zip(line, fmt)):
+                pos = (start_x, start_y)
+                patch = self.font(c, f & 0xFF80)
+                self._draw(mat, patch, pos, self._get_color(f))
+                if f & FMT_Italic and italic_start_x == -1:
+                    italic_start_x = start_x
+
+                start_x += patch.width + self.opt.font_horizon_padding
+                if italic_start_x == -1:
                     continue
-                if (i!=len(line)-1) and (fmt[i+1]&FMT_Italic):
+                if (i != len(line) - 1) and (fmt[i + 1] & FMT_Italic):
                     continue
-                
-                italic_end_x=start_x-self.opt.font_horizon_padding
-                italic_mat=italic(mat[start_y:start_y+31,italic_start_x:italic_end_x])
-                w=italic_mat.shape[1]
-                paste_x=max(italic_start_x-4,0)
-                mat[start_y:start_y+31,paste_x:paste_x+w]=italic_mat
+
+                italic_end_x = start_x - self.opt.font_horizon_padding
+                italic_mat = _italic(
+                    mat[start_y : start_y + 31, italic_start_x:italic_end_x]
+                )
+                w = italic_mat.shape[1]
+                paste_x = max(italic_start_x - 4, 0)
+                mat[start_y : start_y + 31, paste_x : paste_x + w] = italic_mat
                 # y_start=start_y-2
                 # for shift in [4,3,2,1,0,-1,-2,-3]:
                 #     y_end=y_start+4
@@ -180,9 +181,9 @@ class TellRawSimulator:
                 #     mat[y_start:y_end,italic_start_x:italic_end_x]=0
                 #     mat[y_start:y_end,italic_start_x+shift:italic_end_x+shift]=orig
                 #     y_start=y_end
-                italic_start_x=-1
-                    
-        image=Image.fromarray(mat)
+                italic_start_x = -1
+
+        image = Image.fromarray(mat)
         return image
 
 
@@ -202,7 +203,7 @@ def _shear_image(img: RGBA_NP_MATRIX, k: float):
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
-def italic(mat: RGBA_NP_MATRIX):
+def _italic(mat: RGBA_NP_MATRIX):
     k = np.tanh(np.deg2rad(15))
     return _shear_image(mat, k)
 
