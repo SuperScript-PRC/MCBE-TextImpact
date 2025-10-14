@@ -2,10 +2,10 @@
 .vscode
 .idea
 .DS_store
+.pyc
 
 # private
 font_png
 
 # debug
-
 test_*
