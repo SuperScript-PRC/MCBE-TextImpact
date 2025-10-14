@@ -68,32 +68,74 @@ def get_specific_length_spaces_and_diff(length: int, *, prev_diff=0):
     return s, int(min_diff)
 
 
-def cut_by_length(line: str, _spaces: int) -> list[str]:
+def get_last_style(line: str):
+    style_color = ""
+    style_bold = False
+    style_italic = False
+    prev_is_fmt = False
+    for char in line:
+        if prev_is_fmt:
+            if char == "r":
+                style_color = ""
+                style_bold = False
+                style_italic = False
+            elif char == "o":
+                style_italic = True
+            elif char == "l":
+                style_bold = True
+            else:
+                style_color = char
+            prev_is_fmt = False
+        elif char == "§":
+            prev_is_fmt = True
+    return style_color, style_bold, style_italic
+
+
+def cut_by_length(line: str, _spaces: int, keep_last_style=True) -> list[str]:
     """
     根据给定长度切分文本。
 
     Args:
         line (str): 文本
         _spaces (int): 最大长度
+        keep_last_style (bool): 是否保持行最后的格式
 
     Returns:
         list[str]: 切分后的文本
     """
+    if _spaces <= 0:
+        raise ValueError("Length must be positive")
     width = 0
     spaces = _spaces * SPACE_WIDTH + max(0, _spaces - 1) * CHAR_HORIZON_PADDING
+    _lcolor = ""
     _bold = False
     _italic = False  # Sorry that this is useless now
     _fmt = False
     outputs: list[str] = []
     cached = ""
-    for char in line:
+    line_chars = list(line)
+    while line_chars:
+        char = line_chars.pop(0)
+        need_continue = False
         if width >= spaces or char == "\n":
+            if keep_last_style:
+                inserted = ""
+                if _lcolor:
+                    inserted += "§" + _lcolor
+                if _bold:
+                    inserted += "§l"
+                if _italic:
+                    inserted += "§o"
+                if char != "\n":
+                    line_chars = [*inserted, char, *line_chars]
+                    need_continue=True   
             outputs.append(cached)
             cached = ""
             width = 0
+            if char == "\n" or need_continue:
+                continue
         if char == "§":
             _fmt = True
-            continue
         elif _fmt:
             _fmt = False
             if char == "l":
@@ -103,8 +145,11 @@ def cut_by_length(line: str, _spaces: int) -> list[str]:
             elif char == "r":
                 _bold = False
                 _italic = False
-            continue
-        width += get_char_width(char, _bold) + CHAR_HORIZON_PADDING
+                _lcolor = ""
+            else:
+                _lcolor = char
+        else:
+            width += get_char_width(char, _bold) + CHAR_HORIZON_PADDING
         cached += char
     if cached.strip():
         outputs.append(cached)
@@ -141,29 +186,62 @@ def align_right_and_get_diff(text: str, spaces: int, *, prev_diff=0):
     return t + text, diff
 
 
-def align_simple(*text_or_spaces: str | int):
+def align_center(text: str, spaces: int):
+    textlen = get_line_width(text)
+    rest = spaces * SPACE_WIDTH - textlen
+    return (
+        get_specific_length_spaces(int(rest / 2))
+        + text
+        + get_specific_length_spaces(round(rest / 2))
+    )
+
+
+def align_simple(*text_or_spaces: tuple[str, int] | tuple[int, str] | str):
     string = ""
     dif = 0
-    prev_arg = None
-    param_len = len(text_or_spaces)
-    for i, arg in enumerate(text_or_spaces):
-        if i == param_len - 1:
-            if isinstance(arg, str):
-                string += arg
-            elif isinstance(arg, int):
-                string += align_right("", arg)
-            break
-        if prev_arg is None:
-            prev_arg = arg
-            continue
-        if isinstance(prev_arg, str) and isinstance(arg, int):
-            s, dif = align_left_and_get_diff(prev_arg, arg, prev_diff=-dif)
-            string += s
-            prev_arg = None
-        elif isinstance(prev_arg, int) and isinstance(arg, str):
-            s, dif = align_right_and_get_diff(arg, prev_arg, prev_diff=-dif)
-            string += s
-            prev_arg = None
+    for arg_tp in text_or_spaces:
+        if isinstance(arg_tp, str):
+            string += arg_tp
         else:
-            raise ValueError("Invalid param type")
+            arg1, arg2 = arg_tp
+            if isinstance(arg1, str) and isinstance(arg2, int):
+                s, dif = align_left_and_get_diff(arg1, arg2, prev_diff=-dif)
+                string += s
+            elif isinstance(arg1, int) and isinstance(arg2, str):
+                s, dif = align_right_and_get_diff(arg2, arg1, prev_diff=-dif)
+                string += s
+            else:
+                raise ValueError("Invalid param type")
     return string
+
+
+def yield_chars_and_length(line: str):
+    """
+    根据给定长度切分文本。
+
+    Args:
+        line (str): 文本
+        _spaces (int): 最大长度
+
+    Returns:
+        list[str]: 切分后的文本
+    """
+    width = 0
+    _bold = False
+    _italic = False  # Sorry that this is useless now
+    _fmt = False
+    for char in line:
+        if char == "§":
+            _fmt = True
+        elif _fmt:
+            _fmt = False
+            if char == "l":
+                _bold = True
+            elif char == "o":
+                _italic = True
+            elif char == "r":
+                _bold = False
+                _italic = False
+        else:
+            width += get_char_width(char, _bold) + ITALIC_CHAR_HORIZON_PADDING
+        yield char, width
